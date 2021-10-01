@@ -1,4 +1,4 @@
-package com.template.flows
+package com.dogs.flows
 
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.core.flows.*
@@ -15,13 +15,15 @@ import net.corda.core.flows.FlowSession
 
 import net.corda.core.identity.Party
 
-import com.template.contracts.TemplateContract
+import com.dogs.contracts.TemplateContract
 
 import net.corda.core.transactions.TransactionBuilder
 
-import com.template.states.TemplateState
+import com.dogs.states.TemplateState
 import net.corda.core.contracts.requireThat
 import net.corda.core.identity.AbstractParty
+import net.corda.core.messaging.CordaRPCOps
+import java.security.Permissions
 
 
 // *********
@@ -53,7 +55,6 @@ class Initiator(private val receiver: Party) : FlowLogic<SignedTransaction>() {
         // Step 4. Verify and sign it with our KeyPair.
         builder.verify(serviceHub)
         val ptx = serviceHub.signInitialTransaction(builder)
-
 
         // Step 6. Collect the other party's signature using the SignTransactionFlow.
         val otherParties: MutableList<Party> = output.participants.stream().map { el: AbstractParty? -> el as Party? }.collect(Collectors.toList())

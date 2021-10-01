@@ -1,14 +1,14 @@
-package com.template.contracts
+package com.dogs.contracts
 
 import net.corda.core.identity.CordaX500Name
 import net.corda.testing.core.TestIdentity
 import net.corda.testing.node.MockServices
 import net.corda.testing.node.ledger
 import org.junit.Test
-import com.template.states.TemplateState
+import com.dogs.states.TemplateState
 
 class ContractTests {
-    private val ledgerServices: MockServices = MockServices(listOf("com.template"))
+    private val ledgerServices: MockServices = MockServices(listOf("com.dogs"))
     var alice = TestIdentity(CordaX500Name("Alice", "TestLand", "US"))
     var bob = TestIdentity(CordaX500Name("Alice", "TestLand", "US"))
 

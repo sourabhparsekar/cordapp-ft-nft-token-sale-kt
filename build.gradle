@@ -5,7 +5,7 @@ buildscript { //properties that you need to build the project
 
     ext {
         corda_release_group = constants.getProperty("cordaReleaseGroup")
-        corda_core_release_group =  constants.getProperty("cordaCoreReleaseGroup")
+        corda_core_release_group = constants.getProperty("cordaCoreReleaseGroup")
         corda_release_version = constants.getProperty("cordaVersion")
         corda_core_release_version = constants.getProperty("cordaCoreVersion")
         corda_gradle_plugins_version = constants.getProperty("gradlePluginsVersion")
@@ -15,6 +15,9 @@ buildscript { //properties that you need to build the project
         log4j_version = constants.getProperty("log4jVersion")
         slf4j_version = constants.getProperty("slf4jVersion")
         corda_platform_version = constants.getProperty("platformVersion").toInteger()
+        //Token
+        tokens_release_group = 'com.r3.corda.lib.tokens'
+        tokens_release_version = '1.2'
         //springboot
         spring_boot_version = '2.0.2.RELEASE'
         spring_boot_gradle_plugin_version = '2.0.2.RELEASE'
@@ -25,6 +28,7 @@ buildscript { //properties that you need to build the project
         mavenCentral()
         jcenter()
         maven { url 'https://software.r3.com/artifactory/corda-releases' }
+
     }
 
     dependencies {
@@ -46,6 +50,9 @@ allprojects { //Properties that you need to compile your project (The applicatio
         mavenCentral()
         maven { url 'https://software.r3.com/artifactory/corda' }
         maven { url 'https://jitpack.io' }
+        // Can be removed post-release - used to get nightly snapshot build.
+        maven { url 'https://software.r3.com/artifactory/corda-lib' }
+        maven { url 'https://software.r3.com/artifactory/corda-tokens-dev' }
     }
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
@@ -90,6 +97,13 @@ dependencies {
     cordaCompile "org.apache.logging.log4j:log4j-slf4j-impl:${log4j_version}"
     cordaCompile "org.apache.logging.log4j:log4j-web:${log4j_version}"
     cordaCompile "org.slf4j:jul-to-slf4j:$slf4j_version"
+
+    // Token SDK dependencies.
+    cordapp "$tokens_release_group:tokens-contracts:$tokens_release_version"
+    cordapp "$tokens_release_group:tokens-workflows:$tokens_release_version"
+    // CI dependencies
+//    cordapp "$confidential_id_release_group:ci-workflows:$confidential_id_release_version"
+
 }
 
 //Task to deploy the nodes in order to bootstrap a network
@@ -104,15 +118,19 @@ task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
         projectCordapp {
             deploy = false
         }
+        cordapp("$tokens_release_group:tokens-contracts:$tokens_release_version")
+        cordapp("$tokens_release_group:tokens-workflows:$tokens_release_version")
+//        cordapp "$confidential_id_release_group:ci-workflows:$confidential_id_release_version"
         cordapp project(':contracts')
         cordapp project(':workflows')
-        runSchemaMigration = true //This configuration is for any CorDapps with custom schema, We will leave this as true to avoid
+        runSchemaMigration = true
+        //This configuration is for any CorDapps with custom schema, We will leave this as true to avoid
         //problems for developers who are not familiar with Corda. If you are not using custom schemas, you can change
         //it to false for quicker project compiling time.
     }
     node {
         name "O=Notary,L=London,C=GB"
-        notary = [validating : false]
+        notary = [validating: false]
         p2pPort 10002
         rpcSettings {
             address("localhost:10003")
@@ -126,7 +144,40 @@ task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
             address("localhost:10006")
             adminAddress("localhost:10046")
         }
-        rpcUsers = [[ user: "user1", "password": "test", "permissions": ["ALL"]]]
+        rpcUsers = [
+                [
+                        user         : "user1",
+                        "password"   : "test",
+                        "permissions":
+                                [
+                                        "InvokeRpc.nodeInfo",
+                                        "InvokeRpc.registeredFlows",
+                                        "InvokeRpc.partiesFromName",
+                                        "InvokeRpc.wellKnownPartyFromX500Name",
+                                        "InvokeRpc.startFlow",
+                                        "InvokeRpc.startTrackedFlowDynamic",
+                                        "InvokeRpc.nodeInfo",
+                                        "InvokeRpc.networkMapFeed",
+                                        "InvokeRpc.networkMapSnapshot",
+                                        "InvokeRpc.nodeInfoFromParty",
+                                        "InvokeRpc.stateMachineRecordedTransactionMappingFeed",
+                                        "InvokeRpc.stateMachinesFeed",
+                                        "InvokeRpc.internalVerifiedTransactionsFeed",
+                                        "InvokeRpc.internalFindVerifiedTransaction",
+                                        "InvokeRpc.vaultQueryBy",
+                                        "InvokeRpc.vaultTrackBy",
+                                        "InvokeRpc.killFlow",
+                                        "InvokeRpc.vaultQueryByWithPagingSpec",
+                                        "InvokeRpc.notaryIdentities",
+                                        "InvokeRpc.nodeDiagnosticInfo",
+                                        "InvokeRpc.getNetworkParameters",
+                                        "InvokeRpc.internalVerifiedTransactionsSnapshot",
+                                        "StartFlow.com.dogs.flows.AssignOwner",
+                                        "StartFlow.com.dogs.flows.GetDogCurrencyBalance",
+                                        "StartFlow.com.dogs.flows.SellDogWithDogCurrency"
+                                ]
+                ]
+        ]
     }
     node {
         name "O=PartyB,L=New York,C=US"
@@ -135,7 +186,32 @@ task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
             address("localhost:10009")
             adminAddress("localhost:10049")
         }
-        rpcUsers = [[ user: "user1", "password": "test", "permissions": ["ALL"]]]
+        rpcUsers = [
+                [
+                        user         : "user1",
+                        "password"   : "test",
+                        "permissions":
+                                [
+                                        "ALL"
+                                ]
+                ]
+        ]
     }
-
+    node {
+        name "O=Regulator,L=Mumbai,C=IN"
+        p2pPort 10010
+        rpcSettings {
+            address("localhost:10011")
+            adminAddress("localhost:10052")
+        }
+        rpcUsers = [
+                [
+                        user         : "user1",
+                        "password"   : "test",
+                        "permissions": [
+                                "ALL"
+                        ]
+                ]
+        ]
+    }
 }

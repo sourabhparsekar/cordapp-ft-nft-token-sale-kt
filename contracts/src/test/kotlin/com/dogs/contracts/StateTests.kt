@@ -1,6 +1,6 @@
-package com.template.contracts
+package com.dogs.contracts
 
-import com.template.states.TemplateState
+import com.dogs.states.TemplateState
 import org.junit.Test
 import kotlin.test.assertEquals
 
